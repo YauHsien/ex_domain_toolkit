@@ -1,9 +1,11 @@
 defmodule YDToolkit do
   @moduledoc """
-  Yet another __Domain-Driven Design__ toolkit.
+  Yet another *Domain-Driven Design* toolkit.
   """
 
-  defmacro factory(name, block) do
+  @spec factory(any, [{:do, any}, ...]) ::
+          {:defmodule, [{:context, YDToolkit} | {:import, Kernel}, ...], [...]}
+  defmacro factory(name, do: block) do
     quote do
       defmodule unquote(name) do
         unquote(block)
@@ -11,14 +13,19 @@ defmodule YDToolkit do
     end
   end
 
-  defmacro repository(name, block) do
+  @spec repository(any, [{:do, any}, ...]) ::
+          {:defmodule, [{:context, YDToolkit} | {:import, Kernel}, ...], [...]}
+  defmacro repository(name, do: block) do
     quote do
       defmodule unquote(name) do
         use GenServer
 
         @type entry :: {__MODULE__, Registry.key}
+        @registry Application.fetch_env!(:ex_domain_toolkit, :registries)[:for_repository]
 
-        def start_link(opts), do: GenServer.start_link(__MODULE__, [], name: Keyword.get(opts, :name, __MODULE__))
+        def start_link(opts),
+          do: GenServer.start_link(__MODULE__, [],
+                name: {:via, Registry, {@registry, Keyword.get(opts, :name, __MODULE__)}})
 
         def registry(repository), do: GenServer.call(repository, {:get, :registry}) |> elem(1)
 
@@ -51,24 +58,42 @@ defmodule YDToolkit do
     end
   end
 
-  defmacro value_object(name, block) do
-	  quote do
+  @spec value_object({atom, maybe_improper_list, maybe_improper_list}, [{:do, any}, ...]) ::
+          {:def, [{:context, YDToolkit} | {:import, Kernel}, ...],
+           [[{any, any}, ...] | {atom, maybe_improper_list, maybe_improper_list}, ...]}
+          | {:defmodule, [{:context, YDToolkit} | {:import, Kernel}, ...],
+             [[{any, any}, ...] | {:__aliases__, maybe_improper_list, maybe_improper_list}, ...]}
+  defmacro value_object({:__aliases__, c, a} = name, do: block) when is_list(c) and is_list(a) do
+    quote do
       defmodule unquote(name) do
         unquote(block)
       end
     end
   end
 
-  defmacro accessor(name, block) do
-    quote do
+  defmacro value_object({f, c, a} = name, do: block) when is_atom(f) and is_list(c) and is_list(a) do
+	  quote do
       def unquote(name) do
-        unquote(Keyword.get(block, :do))
+        unquote(block)
       end
     end
   end
 
+  @spec accessor(any, [{:do, [{any, any}]}, ...]) ::
+          {:def, [{:context, YDToolkit} | {:import, Kernel}, ...], [...]}
+  defmacro accessor(name, do: block) do
+    quote do
+      def unquote(name) do
+        unquote(block)
+      end
+    end
+  end
+
+  @spec constructor(any, any) :: {:accessor, [], [...]}
   defmacro constructor(name, block), do: quote do: accessor(unquote(name), unquote(block))
+  @spec setter(any, any) :: {:accessor, [], [...]}
   defmacro setter(name, block), do: quote do: accessor(unquote(name), unquote(block))
+  @spec getter(any, any) :: {:accessor, [], [...]}
   defmacro getter(name, block), do: quote do: accessor(unquote(name), unquote(block))
 
 end
