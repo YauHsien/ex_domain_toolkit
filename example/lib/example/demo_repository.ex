@@ -3,9 +3,8 @@ import YDToolkit
 
 
 repository Example.DemoRepository do
-  alias YDToolkit.Stereotype.Repository
 
-  @type created :: {:ok, Repository.entry()} | {:error, term()}
+  @type created :: {:ok, entry()} | {:error, term()}
 
   @spec create(Example.Demo.t) :: created()
 
