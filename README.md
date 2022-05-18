@@ -16,8 +16,8 @@ In `config/config.exs`, put configuration of registry for repository,
 ```elixir
 import Config
 
-config :ex_domain_toolkit, :registries,
-  for_repository: MyRepoRegistry
+config :ex_domain_toolkit,
+  registry: MyRepoRegistry
 ```
 
 Then note about its usage as what descripted as followings.
