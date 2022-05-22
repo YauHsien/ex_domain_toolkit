@@ -35,7 +35,7 @@ defmodule YDToolkit do
         use GenServer
 
         @type entry :: {__MODULE__, Registry.key}
-        @registry Application.fetch_env!(:ex_domain_toolkit, :registry)
+        @registry quote(do: Application.fetch_env!(:ex_domain_toolkit, :registry))
 
         def start_link(opts),
           do: GenServer.start_link(__MODULE__, [],
