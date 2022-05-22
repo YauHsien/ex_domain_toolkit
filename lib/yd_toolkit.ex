@@ -96,54 +96,6 @@ defmodule YDToolkit do
   defmacro aggregate({:__aliases__, c, a} = name, do: block) when is_list(c) and is_list(a) do
     quote do
       defmodule unquote(name) do
-        use GenServer
-
-        @type some_repo_entry :: {atom(), Registry.key}
-        @type entry :: {some_repo_entry(), Registry.key}
-        @registry Application.fetch_env!(:ex_domain_toolkit, :registry)
-
-        def start_link(init_struct: init_struct, name: name),
-          do: GenServer.start_link(__MODULE__, [init_struct: init_struct], name: name)
-
-        def registry(aggregate), do: GenServer.call(aggregate, {:get, :registry}) |> elem(1)
-
-        @impl true
-        def init(opts) do
-
-          registry = __MODULE__.Registry
-          {:ok, _} = Registry.start_link(keys: :unique, name: registry)
-
-          case Keyword.get(opts, :init_struct) do
-            nil -> {:stop, {:error, :no_root}}
-            root -> {:ok, %{registry: registry, root: root}}
-          end
-        end
-
-        @impl true
-        def handle_call(request, from, state)
-
-        def handle_call({:get, :registry}, _from, %{registry: registry} = state) do
-          {:reply, {:ok, registry}, state}
-        end
-
-        def handle_call({:put_entry, key, value}, _from, %{registry: registry} = state) do
-          case Registry.register(registry, key, value) do
-            {:ok, _} -> :ok
-            {:error, {:already_registered, _}} -> {:error, :dup}
-          end
-          |> then(&({:reply, &1, state}))
-        end
-
-        def handle_call({:get_entry, key}, _from, %{registry: registry} = state) do
-          case Registry.lookup(registry, key) do
-            [] -> {:error, :not_found}
-            [{pid, value}] when pid == self() -> {:ok, value}
-          end
-          |> then(&({:reply, &1, state}))
-        end
-
-        def handle_call(request, _from, state), do: {:reply, {:bare, request}, state}
-
         unquote(block)
       end
     end
